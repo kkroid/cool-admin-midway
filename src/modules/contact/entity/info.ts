@@ -1,0 +1,32 @@
+import { BaseEntity } from '../../base/entity/base';
+import { Column, Entity, Index } from 'typeorm';
+
+/**
+ * 联系人信息
+ */
+@Entity('contact_info')
+export class ContactInfoEntity extends BaseEntity {
+  @Column({ comment: '姓名', length: 50 })
+  name: string;
+
+  @Column({ comment: '公司', length: 100, nullable: true })
+  company: string;
+
+  @Column({ comment: '职位', length: 50, nullable: true })
+  position: string;
+
+  @Column({ comment: '电话', length: 20, nullable: true })
+  phone: string;
+
+  @Column({ comment: '邮箱', length: 100, nullable: true })
+  email: string;
+
+  @Column({ comment: '其他信息', type: 'text', nullable: true })
+  otherInfo: string;
+
+  @Column({ comment: '路径', type: 'json', nullable: true })
+  path: string[];
+
+  @Column({ comment: '备注', type: 'text', nullable: true })
+  remark: string;
+}
