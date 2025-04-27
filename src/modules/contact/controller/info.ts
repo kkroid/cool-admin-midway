@@ -1,8 +1,8 @@
 import { Inject } from '@midwayjs/core';
 import { CoolController, BaseController } from '@cool-midway/core';
-import { ContactInfoEntity } from '../../entity/info';
-import { ContactInfoService } from '../../service/info';
-import { BaseSysUserEntity } from '../../../base/entity/sys/user';
+import { ContactInfoEntity } from '../entity/info';
+import { ContactInfoService } from '../service/info';
+import { BaseSysUserEntity } from '../../base/entity/sys/user';
 
 /**
  * 联系人信息
@@ -46,7 +46,7 @@ import { BaseSysUserEntity } from '../../../base/entity/sys/user';
     ],
   },
 })
-export class AdminContactInfoController extends BaseController {
+export class ContactInfoController extends BaseController {
   @Inject()
   contactInfoService: ContactInfoService;
 }
