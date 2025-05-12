@@ -1,0 +1,4 @@
+onlyBuiltDependencies:
+  - javascript-obfuscator
+  - msgpackr-extract
+  - sqlite3

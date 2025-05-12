@@ -6,7 +6,7 @@ import { Column, Entity, Index } from 'typeorm';
  */
 @Entity('contact_info')
 export class ContactInfoEntity extends BaseEntity {
-  @Column({ comment: '姓名', length: 50 })
+  @Column({ comment: '姓名', length: 50, nullable: false })
   name: string;
 
   @Column({ comment: '公司', length: 100, nullable: true })
@@ -15,18 +15,18 @@ export class ContactInfoEntity extends BaseEntity {
   @Column({ comment: '职位', length: 50, nullable: true })
   position: string;
 
-  @Column({ comment: '电话', length: 20, nullable: true })
+  @Column({ comment: '电话', length: 30, nullable: true })
   phone: string;
 
-  @Column({ comment: '邮箱', length: 100, nullable: true })
+  @Column({ comment: '邮箱', length: 120, nullable: true })
   email: string;
 
   @Column({ comment: '其他信息', type: 'text', nullable: true })
-  otherInfo: string;
+  misc: string;
 
-  @Column({ comment: '路径', type: 'json', nullable: true })
+  @Column({ comment: '路径', type: 'text', nullable: true })
   path: string[];
 
-  @Column({ comment: '备注', type: 'text', nullable: true })
-  remark: string;
+  @Column({ comment: '路径', type: 'text', nullable: true })
+  remark: string[];
 }
