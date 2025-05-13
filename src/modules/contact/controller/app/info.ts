@@ -15,7 +15,7 @@ import { BaseSysUserEntity } from '../../../base/entity/sys/user';
     // 1. 自定义 where
     where: async (ctx) => {
       const { search } = ctx.request.body;
-      console.log('search', search);
+      // console.log('search', search);
       // 如果 search 为空或仅包含空格，直接返回空数组
       if (search == undefined || !search || !search.trim()) {
         return [['1 = 0']];
