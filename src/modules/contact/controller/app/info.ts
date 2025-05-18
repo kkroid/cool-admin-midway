@@ -64,7 +64,7 @@ import { BaseSysUserEntity } from '../../../base/entity/sys/user';
     },
   },
 })
-export class ContactInfoController extends BaseController {
+export class AppContactInfoController extends BaseController {
   @Inject()
   contactInfoService: ContactInfoService;
 
