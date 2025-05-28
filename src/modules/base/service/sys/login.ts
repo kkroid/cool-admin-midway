@@ -250,32 +250,51 @@ export class BaseSysLoginService extends BaseService {
    * @param code 飞书回调的code
    */
   async feishuLogin(code: string) {
-    // 1. 获取 app_access_token（v3接口需要先获取 app_access_token）
-    const appTokenRes = await axios.post('https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal', {
-      app_id: this.feishuConfig.appId,
-      app_secret: this.feishuConfig.appSecret,
-    });
+    // 1. 获取app_access_token（必须先获取）
+    const appTokenRes = await axios.post(
+      'https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal',
+      {
+        app_id: this.feishuConfig.appId,
+        app_secret: this.feishuConfig.appSecret
+      },
+      {
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+
     if (appTokenRes.data.code !== 0) {
-      throw new CoolCommException('飞书 app_access_token 获取失败: ' + appTokenRes.data.msg);
+      throw new CoolCommException('获取app_access_token失败: ' + appTokenRes.data.msg);
     }
-    const app_access_token = appTokenRes.data.app_access_token;
-
-    // 2. 用 code 换取 user_access_token
-    const tokenRes = await axios.post('https://open.feishu.cn/open-apis/authen/v3/access_token', {
-      grant_type: 'authorization_code',
-      code,
-    }, {
-      headers: { Authorization: `Bearer ${app_access_token}` }
-    });
+    const appAccessToken = appTokenRes.data.app_access_token;
+    // 2. 获取user_access_token（使用v1版本）
+    const tokenRes = await axios.post(
+      'https://open.feishu.cn/open-apis/authen/v1/access_token',
+      {
+        grant_type: 'authorization_code',
+        code
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${appAccessToken}`
+        }
+      }
+    );
     if (tokenRes.data.code !== 0) {
-      throw new CoolCommException('飞书 user_access_token 获取失败: ' + tokenRes.data.msg);
+      throw new CoolCommException('飞书登录失败: ' + tokenRes.data.msg);
     }
-    const user_access_token = tokenRes.data.data.access_token;
+    const access_token = tokenRes.data.data.access_token;
+    // 3. 获取用户信息（保持v1版本）
+    const userRes = await axios.get(
+      'https://open.feishu.cn/open-apis/authen/v1/user_info',
+      {
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
-    // 3. 获取用户信息
-    const userRes = await axios.get('https://open.feishu.cn/open-apis/authen/v3/user_info', {
-      headers: { Authorization: `Bearer ${user_access_token}` }
-    });
     if (userRes.data.code !== 0) {
       throw new CoolCommException('获取飞书用户信息失败: ' + userRes.data.msg);
     }
