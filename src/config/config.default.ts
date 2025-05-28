@@ -63,6 +63,10 @@ export default {
   //     },
   //   },
   // },
+  feishu: {
+    appId: process.env.FEISHU_APP_ID || 'AppID',
+    appSecret: process.env.FEISHU_APP_SECRET || 'AppSecret',
+  },
   cool: {
     // 已经插件化，本地文件上传查看 plugin/config.ts，其他云存储查看对应插件的使用
     file: {},

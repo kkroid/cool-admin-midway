@@ -15,6 +15,7 @@ import { Context } from '@midwayjs/koa';
 import { CachingFactory, MidwayCache } from '@midwayjs/cache-manager';
 import { Utils } from '../../../../comm/utils';
 import * as svgCaptcha from 'svg-captcha';
+import axios from 'axios';
 
 /**
  * 登录
@@ -44,6 +45,9 @@ export class BaseSysLoginService extends BaseService {
 
   @Config('module.base')
   coolConfig;
+
+  @Config('feishu')
+  feishuConfig;
 
   /**
    * 登录
@@ -239,5 +243,58 @@ export class BaseSysLoginService extends BaseService {
       );
       return result;
     }
+  }
+
+  /**
+   * 飞书登录
+   * @param code 飞书回调的code
+   */
+  async feishuLogin(code: string) {
+    // 1. 获取 access_token
+    const tokenRes = await axios.post('https://open.feishu.cn/open-apis/authen/v1/access_token', {
+      grant_type: 'authorization_code',
+      code,
+      client_id: this.feishuConfig.appId,
+      client_secret: this.feishuConfig.appSecret,
+    });
+    if (tokenRes.data.code !== 0) {
+      throw new CoolCommException('飞书登录失败: ' + tokenRes.data.msg);
+    }
+    const access_token = tokenRes.data.data.access_token;
+
+    // 2. 获取用户信息
+    const userRes = await axios.get('https://open.feishu.cn/open-apis/authen/v1/user_info', {
+      headers: { Authorization: `Bearer ${access_token}` }
+    });
+    if (userRes.data.code !== 0) {
+      throw new CoolCommException('获取飞书用户信息失败: ' + userRes.data.msg);
+    }
+    const feishuUser = userRes.data.data;
+
+    // 3. 查找或创建本地后台用户
+    let user = await this.baseSysUserEntity.findOneBy({ username: feishuUser.union_id });
+    if (!user) {
+      user = this.baseSysUserEntity.create({
+        username: feishuUser.union_id,
+        password: 'FeiShu_' + feishuUser.union_id, // 默认密码
+        name: feishuUser.name,
+        status: 1,
+        roleIdList: [2],
+      });
+      await this.baseSysUserEntity.save(user);
+    }
+    // 4. 获取角色
+    const roleIds = await this.baseSysRoleService.getByUser(user.id);
+    if (_.isEmpty(roleIds)) {
+      throw new CoolCommException('该用户未设置任何角色，无法登录~');
+    }
+    // 5. 生成token
+    const { expire, refreshExpire } = this.coolConfig.jwt.token;
+    return {
+      expire,
+      token: await this.generateToken(user, roleIds, expire),
+      refreshExpire,
+      refreshToken: await this.generateToken(user, roleIds, refreshExpire, true),
+    };
   }
 }

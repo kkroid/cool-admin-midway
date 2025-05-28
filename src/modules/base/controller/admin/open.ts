@@ -95,4 +95,13 @@ export class BaseOpenController extends BaseController {
       };
     }
   }
+
+  /**
+   * 飞书登录
+   */
+  @CoolTag(TagTypes.IGNORE_TOKEN)
+  @Post('/feishuLogin', { summary: '飞书登录' })
+  async feishuLogin(@Body('code') code: string) {
+    return this.ok(await this.baseSysLoginService.feishuLogin(code));
+  }
 }
