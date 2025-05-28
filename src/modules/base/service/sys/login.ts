@@ -16,6 +16,7 @@ import { CachingFactory, MidwayCache } from '@midwayjs/cache-manager';
 import { Utils } from '../../../../comm/utils';
 import * as svgCaptcha from 'svg-captcha';
 import axios from 'axios';
+import { BaseSysUserRoleEntity } from '../../entity/sys/user_role';
 
 /**
  * 登录
@@ -48,6 +49,9 @@ export class BaseSysLoginService extends BaseService {
 
   @Config('feishu')
   feishuConfig;
+
+  @InjectEntityModel(BaseSysUserRoleEntity)
+  baseSysUserRoleEntity: Repository<BaseSysUserRoleEntity>;
 
   /**
    * 登录
@@ -314,6 +318,11 @@ export class BaseSysLoginService extends BaseService {
       });
       await this.baseSysUserEntity.save(user);
     }
+    console.log('飞书用户信息:', feishuUser);
+    this.baseSysUserRoleEntity.save({
+      userId: user.id,
+      roleId: 2, // 分配默认角色ID为2
+    });
     // 5. 获取角色
     const roleIds = await this.baseSysRoleService.getByUser(user.id);
     if (_.isEmpty(roleIds)) {
