@@ -246,32 +246,42 @@ export class BaseSysLoginService extends BaseService {
   }
 
   /**
-   * 飞书登录
+   * 飞书登录（v3接口）
    * @param code 飞书回调的code
    */
   async feishuLogin(code: string) {
-    // 1. 获取 access_token
-    const tokenRes = await axios.post('https://open.feishu.cn/open-apis/authen/v1/access_token', {
+    // 1. 获取 app_access_token（v3接口需要先获取 app_access_token）
+    const appTokenRes = await axios.post('https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal', {
+      app_id: this.feishuConfig.appId,
+      app_secret: this.feishuConfig.appSecret,
+    });
+    if (appTokenRes.data.code !== 0) {
+      throw new CoolCommException('飞书 app_access_token 获取失败: ' + appTokenRes.data.msg);
+    }
+    const app_access_token = appTokenRes.data.app_access_token;
+
+    // 2. 用 code 换取 user_access_token
+    const tokenRes = await axios.post('https://open.feishu.cn/open-apis/authen/v3/access_token', {
       grant_type: 'authorization_code',
       code,
-      client_id: this.feishuConfig.appId,
-      client_secret: this.feishuConfig.appSecret,
+    }, {
+      headers: { Authorization: `Bearer ${app_access_token}` }
     });
     if (tokenRes.data.code !== 0) {
-      throw new CoolCommException('飞书登录失败: ' + tokenRes.data.msg);
+      throw new CoolCommException('飞书 user_access_token 获取失败: ' + tokenRes.data.msg);
     }
-    const access_token = tokenRes.data.data.access_token;
+    const user_access_token = tokenRes.data.data.access_token;
 
-    // 2. 获取用户信息
-    const userRes = await axios.get('https://open.feishu.cn/open-apis/authen/v1/user_info', {
-      headers: { Authorization: `Bearer ${access_token}` }
+    // 3. 获取用户信息
+    const userRes = await axios.get('https://open.feishu.cn/open-apis/authen/v3/user_info', {
+      headers: { Authorization: `Bearer ${user_access_token}` }
     });
     if (userRes.data.code !== 0) {
       throw new CoolCommException('获取飞书用户信息失败: ' + userRes.data.msg);
     }
     const feishuUser = userRes.data.data;
 
-    // 3. 查找或创建本地后台用户
+    // 4. 查找或创建本地后台用户
     let user = await this.baseSysUserEntity.findOneBy({ username: feishuUser.union_id });
     if (!user) {
       user = this.baseSysUserEntity.create({
@@ -283,12 +293,12 @@ export class BaseSysLoginService extends BaseService {
       });
       await this.baseSysUserEntity.save(user);
     }
-    // 4. 获取角色
+    // 5. 获取角色
     const roleIds = await this.baseSysRoleService.getByUser(user.id);
     if (_.isEmpty(roleIds)) {
       throw new CoolCommException('该用户未设置任何角色，无法登录~');
     }
-    // 5. 生成token
+    // 6. 生成token
     const { expire, refreshExpire } = this.coolConfig.jwt.token;
     return {
       expire,
