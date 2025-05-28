@@ -308,7 +308,9 @@ export class BaseSysLoginService extends BaseService {
         password: 'FeiShu_' + feishuUser.union_id, // 默认密码
         name: feishuUser.name,
         status: 1,
-        roleIdList: [2],
+        departmentId: 15,
+        userId: 1,
+        nickName: feishuUser.name,
       });
       await this.baseSysUserEntity.save(user);
     }
