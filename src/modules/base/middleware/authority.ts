@@ -102,6 +102,9 @@ export class BaseAuthorityMiddleware
             throw new CoolCommException('登录失效~', 401);
           }
           if (!rToken) {
+            console.error(
+              `未找到用户token，userId: ${ctx.admin.userId}, url: ${url}`
+            );
             throw new CoolCommException('登录失效或无权限访问~', 401);
           }
           if (rToken !== token && this.jwtConfig.jwt.sso) {

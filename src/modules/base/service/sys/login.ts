@@ -270,6 +270,7 @@ export class BaseSysLoginService extends BaseService {
       throw new CoolCommException('获取app_access_token失败: ' + appTokenRes.data.msg);
     }
     const appAccessToken = appTokenRes.data.app_access_token;
+    // console.log("token:", appAccessToken);
     // 2. 获取user_access_token（使用v1版本）
     const tokenRes = await axios.post(
       'https://open.feishu.cn/open-apis/authen/v1/access_token',
@@ -288,6 +289,7 @@ export class BaseSysLoginService extends BaseService {
       throw new CoolCommException('飞书登录失败: ' + tokenRes.data.msg);
     }
     const access_token = tokenRes.data.data.access_token;
+    // console.log("access_token:", access_token);
     // 3. 获取用户信息（保持v1版本）
     const userRes = await axios.get(
       'https://open.feishu.cn/open-apis/authen/v1/user_info',
@@ -303,38 +305,56 @@ export class BaseSysLoginService extends BaseService {
       throw new CoolCommException('获取飞书用户信息失败: ' + userRes.data.msg);
     }
     const feishuUser = userRes.data.data;
+    // console.log("code:", userRes.data.code);
 
     // 4. 查找或创建本地后台用户
     let user = await this.baseSysUserEntity.findOneBy({ username: feishuUser.union_id });
     if (!user) {
       user = this.baseSysUserEntity.create({
         username: feishuUser.union_id,
-        password: 'FeiShu_' + feishuUser.union_id, // 默认密码
+        password: md5('FeiShu_' + feishuUser.union_id), // 默认密码
         name: feishuUser.name,
         status: 1,
         departmentId: 15,
         userId: 1,
         nickName: feishuUser.name,
       });
-      await this.baseSysUserEntity.save(user);
+      user = await this.baseSysUserEntity.save(user);
+      await this.baseSysUserRoleEntity.save({
+        userId: user.id,
+        roleId: 2, // 分配默认角色ID为2
+      });
     }
-    console.log('飞书用户信息:', feishuUser);
-    this.baseSysUserRoleEntity.save({
-      userId: user.id,
-      roleId: 2, // 分配默认角色ID为2
-    });
+    console.log('飞书用户信息:', user);
     // 5. 获取角色
     const roleIds = await this.baseSysRoleService.getByUser(user.id);
     if (_.isEmpty(roleIds)) {
       throw new CoolCommException('该用户未设置任何角色，无法登录~');
     }
+
     // 6. 生成token
     const { expire, refreshExpire } = this.coolConfig.jwt.token;
-    return {
+    const result = {
       expire,
       token: await this.generateToken(user, roleIds, expire),
       refreshExpire,
       refreshToken: await this.generateToken(user, roleIds, refreshExpire, true),
+      username: user.name,
     };
+    // 将用户相关信息保存到缓存
+    const perms = await this.baseSysMenuService.getPerms(roleIds);
+    const departments = await this.baseSysDepartmentService.getByRoleIds(
+      roleIds,
+      user.username === 'admin'
+    );
+    await this.midwayCache.set(`admin:department:${user.id}`, departments);
+    await this.midwayCache.set(`admin:perms:${user.id}`, perms);
+    await this.midwayCache.set(`admin:token:${user.id}`, result.token);
+    await this.midwayCache.set(
+      `admin:token:refresh:${user.id}`,
+      result.token
+    );
+
+    return result;
   }
 }

@@ -27,6 +27,6 @@ export class ContactInfoEntity extends BaseEntity {
   @Column({ comment: '路径', type: 'text', nullable: true })
   path: string[];
 
-  @Column({ comment: '路径', type: 'text', nullable: true })
+  @Column({ comment: '备注', type: 'text', nullable: true })
   remark: string[];
 }
