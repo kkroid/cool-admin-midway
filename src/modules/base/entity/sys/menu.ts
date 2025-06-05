@@ -15,11 +15,14 @@ export class BaseSysMenuEntity extends BaseEntity {
   @Column({ comment: '菜单地址', nullable: true })
   router: string;
 
+  @Column({ comment: '外链地址', nullable: true })
+  link: string;
+
   @Column({ comment: '权限标识', type: 'text', nullable: true })
   perms: string;
 
   @Column({
-    comment: '类型 0-目录 1-菜单 2-按钮',
+    comment: '类型 0-目录 1-菜单 2-按钮 3-外链',
     default: 0,
   })
   type: number;
