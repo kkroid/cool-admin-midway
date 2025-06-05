@@ -262,15 +262,17 @@ export class BaseSysLoginService extends BaseService {
         app_secret: this.feishuConfig.appSecret
       },
       {
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json; charset=utf-8' }
       }
     );
 
     if (appTokenRes.data.code !== 0) {
-      throw new CoolCommException('获取app_access_token失败: ' + appTokenRes.data.msg);
+      console.log("appId:", this.feishuConfig.appId);
+      console.log("appSec:", this.feishuConfig.appSecret);
+      throw new CoolCommException('获取app_access_token失败, code:' + appTokenRes.data.code + ", msg:" + appTokenRes.data.msg);
     }
     const appAccessToken = appTokenRes.data.app_access_token;
-    // console.log("token:", appAccessToken);
+    console.log("token:", appAccessToken);
     // 2. 获取user_access_token（使用v1版本）
     const tokenRes = await axios.post(
       'https://open.feishu.cn/open-apis/authen/v1/access_token',
@@ -289,7 +291,7 @@ export class BaseSysLoginService extends BaseService {
       throw new CoolCommException('飞书登录失败: ' + tokenRes.data.msg);
     }
     const access_token = tokenRes.data.data.access_token;
-    // console.log("access_token:", access_token);
+    console.log("access_token:", access_token);
     // 3. 获取用户信息（保持v1版本）
     const userRes = await axios.get(
       'https://open.feishu.cn/open-apis/authen/v1/user_info',
@@ -305,7 +307,7 @@ export class BaseSysLoginService extends BaseService {
       throw new CoolCommException('获取飞书用户信息失败: ' + userRes.data.msg);
     }
     const feishuUser = userRes.data.data;
-    // console.log("code:", userRes.data.code);
+    console.log("code:", userRes.data.code);
 
     // 4. 查找或创建本地后台用户
     let user = await this.baseSysUserEntity.findOneBy({ username: feishuUser.union_id });
